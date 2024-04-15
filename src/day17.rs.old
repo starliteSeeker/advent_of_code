@@ -1,0 +1,195 @@
+use std::collections::VecDeque;
+use std::fs;
+use std::ops::{Index, IndexMut};
+
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
+enum Dir {
+    Right,
+    Up,
+    Left,
+    Down,
+}
+
+impl Index<Dir> for (usize, usize, usize, usize) {
+    type Output = usize;
+
+    fn index(&self, i: Dir) -> &Self::Output {
+        match i {
+            Dir::Right => &self.0,
+            Dir::Up => &self.1,
+            Dir::Left => &self.2,
+            Dir::Down => &self.3,
+        }
+    }
+}
+
+impl IndexMut<Dir> for (usize, usize, usize, usize) {
+    fn index_mut(&mut self, i: Dir) -> &mut Self::Output {
+        match i {
+            Dir::Right => &mut self.0,
+            Dir::Up => &mut self.1,
+            Dir::Left => &mut self.2,
+            Dir::Down => &mut self.3,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct QueueItem {
+    pos: (usize, usize),
+    dir: Dir,
+    count: u8,
+}
+
+pub fn part1() {
+    let contents = fs::read("./inputs/day17_4.txt").unwrap();
+    let arr = contents
+        .split(|&c| c == b'\n')
+        .filter(|&a| !a.is_empty())
+        .map(|v| v.iter().map(|&c| (c - b'0') as usize).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    let h = arr.len();
+    let w = arr[0].len();
+    println!("grid ({h}, {w})");
+    let max_d = 10 * w * h;
+    let mut dists: Vec<Vec<_>> = vec![vec![(max_d, max_d, max_d, max_d); w]; h];
+    dists[0][0] = (0, 0, 0, 0);
+
+    let mut queue = VecDeque::new();
+    queue.push_back(QueueItem {
+        pos: (1, 0),
+        dir: Dir::Down,
+        count: 1,
+    });
+    dists[1][0] = (max_d, max_d, max_d, arr[1][0]);
+    // queue.push_back(QueueItem {
+    //     pos: (0, 1),
+    //     dir: Dir::Right,
+    //     count: 1,
+    // });
+    // dists[0][1] = (arr[0][1], max_d, max_d, max_d);
+
+    while let Some(item) = queue.pop_front() {
+        if item.pos.0 >= arr.len() || item.pos.1 >= arr[0].len() {
+            continue;
+        }
+
+        println!("{:?}", item);
+
+        // go up
+        if item.dir != Dir::Down && !(item.dir == Dir::Up && item.count >= 3) {
+            let pos = (item.pos.0.wrapping_sub(1), item.pos.1);
+            let dist = arr
+                .get(pos.0)
+                .and_then(|x| x.get(pos.1))
+                .map(|x| x + dists[item.pos.0][item.pos.1][item.dir]);
+            if dist.is_some()
+                && dist.unwrap()
+                    < dists
+                        .get(pos.0)
+                        .and_then(|y| y.get(pos.1))
+                        .map(|z| z[Dir::Up])
+                        .unwrap_or(usize::MIN)
+            {
+                dists[pos.0][pos.1][Dir::Up] = dist.unwrap();
+                queue.push_back(QueueItem {
+                    pos,
+                    dir: Dir::Up,
+                    count: if item.dir == Dir::Up {
+                        item.count + 1
+                    } else {
+                        1
+                    },
+                });
+            }
+        }
+        // go left
+        if item.dir != Dir::Right && !(item.dir == Dir::Left && item.count >= 3) {
+            let pos = (item.pos.0, item.pos.1.wrapping_sub(1));
+            let dist = arr
+                .get(pos.0)
+                .and_then(|x| x.get(pos.1))
+                .map(|x| x + dists[item.pos.0][item.pos.1][item.dir]);
+            if dist.is_some()
+                && dist.unwrap()
+                    < dists
+                        .get(pos.0)
+                        .and_then(|y| y.get(pos.1).copied())
+                        .map(|z| z[Dir::Left])
+                        .unwrap_or(usize::MIN)
+            {
+                dists[pos.0][pos.1][Dir::Left] = dist.unwrap();
+                queue.push_back(QueueItem {
+                    pos,
+                    dir: Dir::Left,
+                    count: if item.dir == Dir::Left {
+                        item.count + 1
+                    } else {
+                        1
+                    },
+                });
+            }
+        }
+        // go down
+        if item.dir != Dir::Up && !(item.dir == Dir::Down && item.count >= 3) {
+            let pos = (item.pos.0 + 1, item.pos.1);
+            let dist = arr
+                .get(pos.0)
+                .and_then(|x| x.get(pos.1))
+                .map(|x| x + dists[item.pos.0][item.pos.1][item.dir]);
+            if dist.is_some()
+                && dist.unwrap()
+                    < dists
+                        .get(pos.0)
+                        .and_then(|y| y.get(pos.1).copied())
+                        .map(|z| z[Dir::Down])
+                        .unwrap_or(usize::MIN)
+            {
+                dists[pos.0][pos.1][Dir::Down] = dist.unwrap();
+                queue.push_back(QueueItem {
+                    pos,
+                    dir: Dir::Down,
+                    count: if item.dir == Dir::Down {
+                        item.count + 1
+                    } else {
+                        1
+                    },
+                });
+            }
+        }
+        // go right
+        if item.dir != Dir::Left && !(item.dir == Dir::Right && item.count >= 3) {
+            let pos = (item.pos.0, item.pos.1 + 1);
+            let dist = arr
+                .get(pos.0)
+                .and_then(|x| x.get(pos.1))
+                .map(|x| x + dists[item.pos.0][item.pos.1][item.dir]);
+            if dist.is_some()
+                && dist.unwrap()
+                    < dists
+                        .get(pos.0)
+                        .and_then(|y| y.get(pos.1).copied())
+                        .map(|z| z[Dir::Right])
+                        .unwrap_or(usize::MIN)
+            {
+                dists[pos.0][pos.1][Dir::Right] = dist.unwrap();
+                queue.push_back(QueueItem {
+                    pos,
+                    dir: Dir::Right,
+                    count: if item.dir == Dir::Right {
+                        item.count + 1
+                    } else {
+                        1
+                    },
+                });
+            }
+        }
+    }
+
+    println!("{:?}", dists[h - 1][w - 1]);
+
+    for v in &dists[..] {
+        println!("{:?}", &v[..]);
+    }
+}
