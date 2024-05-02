@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 itertools = "0.12.1"
 regex = "1.10.4"
+petgraph = "0.6.4"
