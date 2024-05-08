@@ -11,9 +11,9 @@
 // mod day20;
 // mod day21;
 // mod day22;
-mod day23;
-// mod day24;
+// mod day23;
+mod day24;
 
 fn main() {
-    day23::part2_bitfield();
+    day24::part2();
 }
