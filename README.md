@@ -1,6 +1,6 @@
-# Advent of Code 2023
+# Advent of Code
 
-Code I wrote for Advent of Code 2023.
+Code I wrote for Advent of Code.
 
 Awful quality code and no guarentee that it'll work on other's puzzle inputs :)
 
