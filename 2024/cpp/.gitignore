@@ -1,5 +1,11 @@
-/compile_commands.json
+# puzzle inputs
+/input
+
+# executables
 /day*
+
+# clangd
+/compile_commands.json
 
 # clangd cache
 /.cache
