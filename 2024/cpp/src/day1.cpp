@@ -25,10 +25,8 @@ void part2(std::vector<int>& list1, std::vector<int>& list2) {
     long total = 0;
     for (int i : list1) {
         // binary search for start and end of consecutive i's
-        int lo =
-            std::lower_bound(list2.begin(), list2.end(), i) - list2.begin();
-        int hi =
-            std::upper_bound(list2.begin(), list2.end(), i) - list2.begin();
+        auto lo = std::lower_bound(list2.begin(), list2.end(), i);
+        auto hi = std::upper_bound(list2.begin(), list2.end(), i);
         total += i * (hi - lo);
     }
 
@@ -41,11 +39,10 @@ int main(int argc, char* argv[]) {
     std::ifstream file("input/day1.txt", std::ios_base::in);
 
     std::vector<int> list1, list2;
-    std::string line;
-    while (getline(file, line)) {
-        size_t after;
-        list1.push_back(std::stoi(line, &after));
-        list2.push_back(std::stoi(line.substr(after)));
+    int a, b;
+    while (file >> a >> b) {
+        list1.push_back(a);
+        list2.push_back(b);
     }
 
     part2(list1, list2);

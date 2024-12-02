@@ -1,6 +1,6 @@
 SRCS = $(wildcard src/*.cpp)
 EXES = $(patsubst src/%.cpp,%,$(SRCS))
-FLAGS = -Wall -Wextra -Wpedantic -O2
+FLAGS = -Wall -Wextra -Wpedantic -Wunused -O2
 
 .PHONY: all clean
 
