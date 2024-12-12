@@ -1,5 +1,6 @@
 # puzzle inputs
-/input
+/input/day*.txt
+!/input/day*_*.txt
 
 # executables
 /day*
