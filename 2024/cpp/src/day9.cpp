@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <numeric>
 #include <vector>
 
@@ -62,17 +63,55 @@ void part1(const std::vector<int> disk) {
 }
 
 long ChunkChecksum(int file_pos, int file_id, int length) {
-    return file_id * (file_pos + file_pos + length - 1) * length / 2;
+    // almost fell into to trap of not properly converting to long
+    return file_id * ((long)file_pos + file_pos + length - 1) * length / 2;
 }
 
 void part2(const std::vector<int> disk) {
-    std::cout << "part2: " << 1000 << std::endl;
+    // also record which file (file_id) is stored in which chunk
+    std::list<std::pair<int, int>> chunks;  // [{spaces, file_id}, ...]
+    bool is_free = false;
+    int file_id = 0;
+    for (int i : disk) {
+        chunks.push_back({i, is_free ? -1 : file_id++});
+        is_free = !is_free;
+    }
+
+    // try moving files leftwards if possible, starting from the end
+    // iterate from end to begin without reverse iterator (cursed?)
+    for (auto back = chunks.end(); (back--) != chunks.begin();) {
+        if (back->second == -1) continue;
+
+        // search for empty space, from begin to back
+        for (auto front = chunks.begin(); front != back; front++) {
+            if (front->second != -1) continue;
+            if (front->first < back->first) continue;
+
+            // move file, repartition front block
+            chunks.insert(front, *back);
+            front->first -= back->first;
+            back->second = -1;
+            break;
+        }
+    }
+
+    // calculate checksum
+    long total = 0;
+    int curr_pos = 0;
+    for (auto& [a, b] : chunks) {
+        if (b != -1) {
+            total += ChunkChecksum(curr_pos, b, a);
+        }
+        curr_pos += a;
+    }
+    std::cout << "part2: " << total << std::endl;
 }
 
 int main(int argc, char* argv[]) {
     (void)argc, (void)argv;
 
-    std::ifstream file("input/day9_1.txt", std::ios_base::in);
+    // day9_1.txt moves 2 file chunks into one empty space
+    std::ifstream file("input/day9.txt", std::ios_base::in);
 
     std::vector<int> disk;
 
