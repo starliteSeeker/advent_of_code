@@ -93,12 +93,90 @@ void part1(const std::vector<std::string>& grid) {
 }
 
 void part2(const std::vector<std::string>& grid) {
-    auto result = Run(grid);
+    auto scores = Run(grid);
+    auto end_scores = scores[1][grid[0].size() - 2];
 
-    // walk back from end to start
+    // walk backwards from end to start, and check if score decreased for the
+    // right amount
     std::set<std::pair<int, int>> visited;
 
-    // std::cout << "part2: " << result[1][grid[0].size() - 2] << std::endl;
+    std::queue<Reindeer> checks;
+    if (end_scores[int(Dir::kUp)] <= end_scores[int(Dir::kRight)]) {
+        checks.push(Reindeer(1, grid[0].size() - 2, Dir::kUp));
+    }
+    if (end_scores[int(Dir::kRight)] <= end_scores[int(Dir::kUp)]) {
+        checks.push(Reindeer(1, grid[0].size() - 2, Dir::kRight));
+    }
+    while (!checks.empty()) {
+        const auto check = checks.front();
+        checks.pop();
+
+        visited.insert({check.row, check.col});
+
+        if ((unsigned int)check.row == grid.size() - 2 && check.col == 1)
+            continue;
+
+        switch (check.dir) {
+            case Dir::kUp: {
+                // check below
+                auto curr = scores[check.row][check.col][int(Dir::kUp)];
+                auto prev = scores[check.row + 1][check.col];
+                for (int i = 0; i < 4; i++) {
+                    Dir d = static_cast<Dir>(i);
+                    if (d == Dir::kUp && curr - prev[i] == 1)
+                        checks.push(
+                            Reindeer(check.row + 1, check.col, Dir::kUp));
+                    else if (d != Dir::kUp && curr - prev[i] == 1001)
+                        checks.push(Reindeer(check.row + 1, check.col, d));
+                }
+                break;
+            }
+            case Dir::kDown: {
+                // check above
+                auto curr = scores[check.row][check.col][int(Dir::kDown)];
+                auto prev = scores[check.row - 1][check.col];
+                for (int i = 0; i < 4; i++) {
+                    Dir d = static_cast<Dir>(i);
+                    if (d == Dir::kDown && curr - prev[i] == 1)
+                        checks.push(
+                            Reindeer(check.row - 1, check.col, Dir::kDown));
+                    else if (d != Dir::kDown && curr - prev[i] == 1001)
+                        checks.push(Reindeer(check.row - 1, check.col, d));
+                }
+                break;
+            }
+            case Dir::kLeft: {
+                // check right
+                auto curr = scores[check.row][check.col][int(Dir::kLeft)];
+                auto prev = scores[check.row][check.col + 1];
+                for (int i = 0; i < 4; i++) {
+                    Dir d = static_cast<Dir>(i);
+                    if (d == Dir::kLeft && curr - prev[i] == 1)
+                        checks.push(
+                            Reindeer(check.row, check.col + 1, Dir::kLeft));
+                    else if (d != Dir::kLeft && curr - prev[i] == 1001)
+                        checks.push(Reindeer(check.row, check.col + 1, d));
+                }
+                break;
+            }
+            case Dir::kRight: {
+                // check left
+                auto curr = scores[check.row][check.col][int(Dir::kRight)];
+                auto prev = scores[check.row][check.col - 1];
+                for (int i = 0; i < 4; i++) {
+                    Dir d = static_cast<Dir>(i);
+                    if (d == Dir::kRight && curr - prev[i] == 1)
+                        checks.push(
+                            Reindeer(check.row, check.col - 1, Dir::kRight));
+                    else if (d != Dir::kRight && curr - prev[i] == 1001)
+                        checks.push(Reindeer(check.row, check.col - 1, d));
+                }
+                break;
+            }
+        }
+    }
+
+    std::cout << "part2: " << visited.size() << std::endl;
 }
 
 int main(int argc, char* argv[]) {
