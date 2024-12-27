@@ -107,6 +107,29 @@ void part2(const std::vector<Coord>& bytes) {
     }
 }
 
+void part2Smart(const std::vector<Coord>& bytes) {
+    // std::lower_bound
+    // https://en.cppreference.com/w/cpp/algorithm/lower_bound#Version_2
+    auto first = bytes.begin(), it = first;
+    int count = bytes.size(), step;
+
+    while (count > 0) {
+        step = count / 2;
+        it = first + step;
+
+        if (AStar(bytes.begin(), it) != INT_MAX) {
+            first = ++it;
+            count -= step + 1;
+        } else
+            count = step;
+    }
+
+    if (first == bytes.begin()) return;
+
+    std::cout << "part2 smart: " << (first - 1)->second << ','
+              << (first - 1)->first << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     (void)argc, (void)argv;
 
@@ -125,6 +148,7 @@ int main(int argc, char* argv[]) {
 
     part1(bytes);
     part2(bytes);
+    part2Smart(bytes);
 
     return 0;
 }
