@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <vector>
 
+// slight cheat by looking up what the answer for example input should be
+// 82050061710, 72242026390, 81251039228, 80786362258, 77985628636
+
 using Coord = std::pair<int, int>;  // {x, y}, bottom left 0, 0
 
 Coord operator-(const Coord& a, const Coord& b) {
@@ -29,25 +32,26 @@ const std::map<Coord, char> numpad_r = {
 const std::unordered_map<char, Coord> dpad = {
     {'l', {0, 0}}, {'d', {1, 0}}, {'r', {2, 0}}, {'u', {1, 1}}, {'A', {2, 1}}};
 
+// align the hole to {0, 0}
+const std::unordered_map<char, Coord> dpad_e = {{'l', {0, -1}},
+                                                {'d', {1, -1}},
+                                                {'r', {2, -1}},
+                                                {'u', {1, 0}},
+                                                {'A', {2, 0}}};
+
 const std::map<Coord, char> dpad_r = {
     {{0, 0}, 'l'}, {{1, 0}, 'd'}, {{2, 0}, 'r'}, {{1, 1}, 'u'}, {{2, 1}, 'A'}};
 
-void part1(const std::vector<std::string>& input) {
-    int total = 0;
-    for (auto& str : input) {
-        std::vector<Coord> moves = {numpad.at('A')}, new_moves;
-        for (size_t i = 0; i < str.size(); i++) {
-            moves.push_back(numpad.at(str[i]));
-        }
+std::vector<Coord> OneStep(std::vector<Coord> moves, bool is_numpad) {
+    std::vector<Coord> new_moves = {dpad.at('A')};
+    for (size_t i = 1; i < moves.size(); i++) {
+        // move from a to b
+        const auto& [ax, ay] = moves[i - 1];
+        const auto& [bx, by] = moves[i];
 
-        // numpad to dpad
-        new_moves = {dpad.at('A')};
-        for (size_t i = 1; i < moves.size(); i++) {
-            // move from a to b
-            const auto& [ax, ay] = moves[i - 1];
-            const auto& [bx, by] = moves[i];
-
-            int dx = bx - ax, dy = by - ay;
+        int dx = bx - ax, dy = by - ay;
+        if (is_numpad) {
+            // bottom left is empty
             if (ay == 0 && bx == 0) {
                 // cross over bottom left, go up then left instead
                 while (dy > 0) {
@@ -62,34 +66,8 @@ void part1(const std::vector<std::string>& input) {
                     dx--;
                 }
             }
-            while (dx < 0) {
-                new_moves.push_back(dpad.at('l'));
-                dx++;
-            }
-            while (dy < 0) {
-                new_moves.push_back(dpad.at('d'));
-                dy++;
-            }
-            while (dx > 0) {
-                new_moves.push_back(dpad.at('r'));
-                dx--;
-            }
-            while (dy > 0) {
-                new_moves.push_back(dpad.at('u'));
-                dy--;
-            }
-            new_moves.push_back(dpad.at('A'));
-        }
-        moves = new_moves;
-        new_moves = {dpad.at('A')};
-
-        // dpad to dpad
-        for (size_t i = 1; i < moves.size(); i++) {
-            // move from a to b
-            const auto& [ax, ay] = moves[i - 1];
-            const auto& [bx, by] = moves[i];
-
-            int dx = bx - ax, dy = by - ay;
+        } else {
+            // top left is empty
             if (ay == 1 && bx == 0) {
                 // cross over top left, go down then left instead
                 while (dy < 0) {
@@ -104,25 +82,43 @@ void part1(const std::vector<std::string>& input) {
                     dx--;
                 }
             }
-            while (dx < 0) {
-                new_moves.push_back(dpad.at('l'));
-                dx++;
-            }
-            while (dy < 0) {
-                new_moves.push_back(dpad.at('d'));
-                dy++;
-            }
-            while (dx > 0) {
-                new_moves.push_back(dpad.at('r'));
-                dx--;
-            }
-            while (dy > 0) {
-                new_moves.push_back(dpad.at('u'));
-                dy--;
-            }
-            new_moves.push_back(dpad.at('A'));
         }
-        moves = new_moves;
+        while (dx < 0) {
+            new_moves.push_back(dpad.at('l'));
+            dx++;
+        }
+        while (dy < 0) {
+            new_moves.push_back(dpad.at('d'));
+            dy++;
+        }
+        while (dx > 0) {
+            new_moves.push_back(dpad.at('r'));
+            dx--;
+        }
+        while (dy > 0) {
+            new_moves.push_back(dpad.at('u'));
+            dy--;
+        }
+        new_moves.push_back(dpad.at('A'));
+    }
+
+    return new_moves;
+}
+
+void part1(const std::vector<std::string>& input) {
+    int total = 0;
+    for (auto& str : input) {
+        // records all positions for robot to visit
+        std::vector<Coord> moves = {numpad.at('A')};
+        for (size_t i = 0; i < str.size(); i++) {
+            moves.push_back(numpad.at(str[i]));
+        }
+
+        // numpad to dpad
+        moves = OneStep(moves, true);
+
+        // dpad to dpad
+        moves = OneStep(moves, false);
 
         int tot = 0;
         for (size_t i = 1; i < moves.size(); i++) {
@@ -136,6 +132,158 @@ void part1(const std::vector<std::string>& input) {
     }
 
     std::cout << "part1: " << total << std::endl;
+}
+
+// cost to move from start to end, then press end button
+// apparently the part 1 algorithm is wrong and I have to consider 2 possibility
+// for each step
+// and i didn't properly consider the cases that goes through the empty space,
+// which cost me hours :)
+long OneStepMemo(std::map<std::pair<Coord, Coord>, long[30]>& memo, Coord start,
+                 Coord end, int layer) {
+    if (long res = memo[{start, end}][layer]; res != 0) return res;
+
+    // move from a to b
+    std::vector<Coord> moves = {dpad_e.at('A')};
+    const auto& [ax, ay] = start;
+    const auto& [bx, by] = end;
+    int dx = bx - ax, dy = by - ay;
+
+    if (layer == 0) {
+        long res = abs(dx) + abs(dy) + 1;
+        memo[{start, end}][0] = res;
+        return res;
+    }
+
+    // try going horizontal then vertical
+    while (dx < 0) {
+        moves.push_back(dpad_e.at('l'));
+        dx++;
+    }
+    while (dx > 0) {
+        moves.push_back(dpad_e.at('r'));
+        dx--;
+    }
+    while (dy < 0) {
+        moves.push_back(dpad_e.at('d'));
+        dy++;
+    }
+    while (dy > 0) {
+        moves.push_back(dpad_e.at('u'));
+        dy--;
+    }
+    moves.push_back(dpad_e.at('A'));
+
+    // tally results
+    long total1 = 0;
+    for (size_t i = 1; i < moves.size(); i++) {
+        total1 += OneStepMemo(memo, moves[i - 1], moves[i], layer - 1);
+    }
+
+    // try goind vertical then horizontal
+    moves = {dpad_e.at('A')};
+    dx = bx - ax, dy = by - ay;
+    while (dy < 0) {
+        moves.push_back(dpad_e.at('d'));
+        dy++;
+    }
+    while (dy > 0) {
+        moves.push_back(dpad_e.at('u'));
+        dy--;
+    }
+    while (dx < 0) {
+        moves.push_back(dpad_e.at('l'));
+        dx++;
+    }
+    while (dx > 0) {
+        moves.push_back(dpad_e.at('r'));
+        dx--;
+    }
+    moves.push_back(dpad_e.at('A'));
+
+    // tally results
+    long total2 = 0;
+    for (size_t i = 1; i < moves.size(); i++) {
+        total2 += OneStepMemo(memo, moves[i - 1], moves[i], layer - 1);
+    }
+
+    // compare results
+    long total;
+    // don't go over empty space
+    if (ay == 0 && bx == 0)
+        total = total2;
+    else if (ax == 0 && by == 0)
+        total = total1;
+    else
+        total = std::min(total1, total2);
+
+    memo[{start, end}][layer] = total;
+
+    return total;
+}
+
+void part2(const std::vector<std::string>& input) {
+    long total = 0;
+    for (auto& str : input) {
+        // records all positions for robot to visit
+        std::vector<Coord> moves = {numpad.at('A')};
+        for (size_t i = 0; i < str.size(); i++) {
+            moves.push_back(numpad.at(str[i]));
+        }
+
+        long tot = 0;
+        std::map<std::pair<Coord, Coord>, long[30]> memo;
+        for (size_t i = 1; i < moves.size(); i++) {
+            tot += OneStepMemo(memo, moves[i - 1], moves[i], 25);
+        }
+        total += tot * stoi(str);
+
+        std::cout << tot << std::endl;
+    }
+
+    std::cout << "part2: " << total << std::endl;
+}
+
+// unused in solution
+void Test(const std::vector<std::string>& input) {
+    const std::string& str = input[0];
+
+    for (int layer = 2; layer <= 27; layer++) {
+        // records all positions for robot to visit
+        std::vector<Coord> moves = {numpad.at('A')};
+        for (size_t i = 0; i < str.size(); i++) {
+            moves.push_back(numpad.at(str[i]));
+        }
+
+        // part 1
+        // numpad to dpad
+        /*
+        std::vector<Coord> new_moves = OneStep(moves, true);
+
+        for (int i = layer - 1; i > 0; i--) {
+            new_moves = OneStep(new_moves, false);
+        }
+        */
+
+        long tot1 = 0;
+        /*
+        for (size_t i = 1; i < new_moves.size(); i++) {
+            const auto& [ax, ay] = new_moves[i - 1];
+            const auto& [bx, by] = new_moves[i];
+            tot1 += abs(bx - ax) + abs(by - ay) + 1;
+        }
+        */
+
+        // part 2
+        long tot2 = 0;
+        std::map<std::pair<Coord, Coord>, long[30]> memo;
+        for (size_t i = 1; i < moves.size(); i++) {
+            tot2 += OneStepMemo(memo, moves[i - 1], moves[i], layer);
+        }
+
+        std::cout << str << " layer" << layer << ' ' << tot1 << ' ' << tot2
+                  << std::endl;
+    }
 }
 
 // didn't consider the expty space of the numpad and dpad, so wrong :)
@@ -210,12 +358,13 @@ void part1_wrong(const std::vector<std::string>& input) {
 int main(int argc, char* argv[]) {
     (void)argc, (void)argv;
 
-    std::ifstream file("input/day21_0.txt", std::ios_base::in);
+    std::ifstream file("input/day21.txt", std::ios_base::in);
     std::string line;
     std::vector<std::string> input;
     while (getline(file, line)) input.push_back(line);
 
     part1(input);
+    part2(input);
 
     return 0;
 }
