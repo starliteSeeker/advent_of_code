@@ -1,6 +1,6 @@
 SRCS = $(wildcard src/*.cpp)
 EXES = $(patsubst src/%.cpp,%,$(SRCS))
-FLAGS = -Wall -Wextra -Wpedantic -Wunused -O2 -std=c++17 -stdlib='libc++' 
+FLAGS = -Wall -Wextra -Wpedantic -Wunused -O2 -std=c++17
 
 .PHONY: all clean
 
