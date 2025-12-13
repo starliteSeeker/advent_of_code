@@ -1,0 +1,6 @@
+# puzzle inputs
+/input/day*.txt
+!/input/day*_*.txt
+
+# common lisp
+*.fasl
