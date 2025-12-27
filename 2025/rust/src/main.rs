@@ -6,8 +6,7 @@ fn main() {
     d5.part1();
     d5.part2();
 
-    let mut d6 = day6::Day6::with_file("input/day6_1.txt");
-    println!("{d6:?}");
-    // d5.part1();
-    // d5.part2();
+    let d6 = day6::Day6::with_file("input/day6.txt");
+    d6.part1();
+    d6.part2();
 }
